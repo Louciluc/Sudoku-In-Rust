@@ -4,7 +4,6 @@
 
 #![feature(test)]
 extern crate test;
-use test::Bencher;
 
 pub mod cell;
 pub use crate::cell::*;
