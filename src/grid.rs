@@ -276,8 +276,7 @@ impl Grid {
         // make immutable list of nums to try, just to make sure nothing will
         // get overwritten when continuing to solve
         let options_to_try = self.grid[empty_cells[0].0][empty_cells[0].1]
-            .options_left
-            .clone();
+            .options_left;
 
         for try_num in options_to_try {
             //println!("Trying {}", try_num);
