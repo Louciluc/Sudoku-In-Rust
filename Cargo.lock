@@ -24,6 +24,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "futures-core"
+version = "0.3.32"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7e3450815272ef58cec6d564423f6e755e25379b217b0bc688e295ba24df6b1d"
+
+[[package]]
 name = "memchr"
 version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -44,6 +50,12 @@ dependencies = [
  "memchr",
  "minimal-lexical",
 ]
+
+[[package]]
+name = "pin-project-lite"
+version = "0.2.17"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a89322df9ebe1c1578d689c92318e070967d1042b512afbe49518723f4e6d5cd"
 
 [[package]]
 name = "proc-macro2"
@@ -68,6 +80,7 @@ name = "sudoku"
 version = "0.1.0"
 dependencies = [
  "color-print",
+ "tick",
 ]
 
 [[package]]
@@ -79,6 +92,23 @@ dependencies = [
  "proc-macro2",
  "quote",
  "unicode-ident",
+]
+
+[[package]]
+name = "thread_aware"
+version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "069b90c4193bb78bb9094d2625a25e6c4eb8ec634ea15650095f0fe66c17e77a"
+
+[[package]]
+name = "tick"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3947972f25827823c4d2cc8a6fea4f5b85d1e5a666ed8a91b9a34df87b4bbbeb"
+dependencies = [
+ "futures-core",
+ "pin-project-lite",
+ "thread_aware",
 ]
 
 [[package]]

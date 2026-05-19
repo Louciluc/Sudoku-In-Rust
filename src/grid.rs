@@ -1,3 +1,5 @@
+use std::time::{Duration, Instant};
+
 pub mod terminal;
 
 pub use super::*;
@@ -36,7 +38,7 @@ impl Grid {
             solutions: Vec::new(),
         };
     }
-    // Contructor:
+    // Constructor:
     pub fn new_empty_quadratic_box(size: usize) -> Grid {
         let s = size.isqrt();
         return Grid {
@@ -147,32 +149,38 @@ impl Grid {
     fn find_possible_options_for_cell(&self, cell_pos: (usize, usize)) -> Vec<usize> {
         let mut found_nums = Vec::new();
 
+        let t_measure = Instant::now();
+        let t_measure_h = Instant::now();
         // horizontal x=const
         for y in 0..self.total_size() {
             // skip input pos
-            //if y == cell_pos.1 { continue; }
+            if y == cell_pos.1 { continue; }
 
             match self.grid[cell_pos.0][y].value {
                 Some(val) => found_nums.push(val),
                 None => {}
             }
         }
+        println!("Time elapsed for horizontal: {}", t_measure_h.elapsed().as_nanos());
 
+        let t_measure_v = Instant::now();
         // vertical y=const
         for x in 0..self.total_size() {
             // skip input pos
-            //if x == cell_pos.0 { continue; }
+            if x == cell_pos.0 { continue; }
 
             match self.grid[x][cell_pos.1].value {
                 Some(val) => found_nums.push(val),
                 None => {}
             }
         }
+        println!("Time elapsed for vertical: {}", t_measure_v.elapsed().as_nanos());
 
         // inside box
         let mut box_of_pos = (0, 0);
         let pos_in_box = self.abs_pos_to_box_pos(cell_pos, &mut box_of_pos);
 
+        let t_measure_b = Instant::now();
         // loop through box
         for x in 0..self.box_size.0 {
             for y in 0..self.box_size.1 {
@@ -189,12 +197,16 @@ impl Grid {
                 }
             }
         }
+        println!("Time elapsed for box: {}", t_measure_b.elapsed().as_nanos());
+        println!("Time elapsed for getting options: {}", t_measure.elapsed().as_nanos());
 
         let mut remaining_nums = self.one_to_last_values();
 
+        let t_measure_sort = Instant::now();
         // keep all nums that werent found:
         // in other words: every number that occurs in both lists should be removed
         remaining_nums.retain(|n| !found_nums.contains(n));
+        println!("Time elapsed for sorting: {}", t_measure_sort.elapsed().as_nanos());
 
         return remaining_nums;
     }
@@ -214,9 +226,14 @@ impl Grid {
     }
 
     fn recursive_solve(&mut self, calc_all_sol: bool) -> bool {
+        let time_measure = Instant::now();
+        self.find_and_set_all_cells();
+        println!("Time elapsed for setting all cells: {}", time_measure.elapsed().as_nanos());
+
         let mut empty_cells = Vec::new();
         Grid::loop_all_mut_mut(self,
-            &mut |x, y, grid: &mut Grid| match grid.grid[x][y].value {
+            &mut |x, y, grid: &mut Grid|
+            match grid.grid[x][y].value {
                 Some(_) => {}
                 None => empty_cells.push((x, y)),
             },
@@ -233,11 +250,9 @@ impl Grid {
                 },
                 &mut |_, _| {},
             );
-
             self.solutions.push(new_sol);
             return true;
         }
-        self.find_and_set_all_cells();
 
         /*
         self.print_grid();
@@ -248,19 +263,12 @@ impl Grid {
 
         // if there are empty cells, sort by remaining options:
         empty_cells.sort_by(|a: &(usize, usize), b: &(usize, usize)| {
-            self.grid[a.0][a.1]
-                .options_left
-                .len()
+            self.grid[a.0][a.1].options_left.len()
                 .cmp(&self.grid[b.0][b.1].options_left.len())
         });
 
-        // if the one cellhas zero options left, backtrack one step:
-        if self.grid[empty_cells[0].0][empty_cells[0].1]
-            .options_left
-            .len()== 0
-        {
-            return false;
-        }
+        // if the first cell has zero options left, backtrack one step:
+        if self.grid[empty_cells[0].0][empty_cells[0].1].options_left.len()== 0 { return false; }
 
         let mut at_least_one_workes = false;
         let old_value = self.grid[empty_cells[0].0][empty_cells[0].1].value;

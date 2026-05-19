@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 color-print = "0.3.7"
+tick = "0.3.0"
