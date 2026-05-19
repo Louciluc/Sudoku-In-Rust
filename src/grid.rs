@@ -1,17 +1,17 @@
-use std::time::{Duration, Instant};
-
 pub mod terminal;
 
 pub use super::*;
 pub use crate::wrongness::Wrongness;
 
-
 #[derive(Clone)]
 pub struct Grid {
     pub grid: CellGrid,
+    pub needs_new_find: Vec<u64>,
+
     pub box_size: (usize, usize),
 
-    pub solutions: Vec<Vec<Vec<usize>>>,
+    // a list (Vec) of grids
+    pub solutions: Vec<Vec<Vec<ValType>>>,
 }
 
 impl Grid {
@@ -21,34 +21,50 @@ impl Grid {
     pub fn box_count(&self) -> (usize, usize) {
         (self.box_size.1, self.box_size.0)
     }
-    pub fn one_to_last_values(&self) -> Vec<usize> {
-        (1..=(self.box_size.0 * self.box_size.1)).collect()
+    #[allow(dead_code)]
+    pub fn one_to_last_values(&self) -> Vec<Mask> {
+        (1..=(self.total_size() as u64)).collect()
+    }
+    #[allow(dead_code)]
+    pub fn full_mask(&self) -> Mask {
+        Self::static_full_mask(self.total_size())
+    }
+    fn static_full_mask(size: usize) -> Mask {
+        (1u64 << size) - 1
     }
 
     // Constructors if box size is quadratic:
-    pub fn new_from_grid_quadratic_box(g: &CellGrid) -> Grid {
-        if !Grid::check_correct_size(g) {
+    #[allow(dead_code)]
+    pub fn new_from_grid_quadratic_box(g: CellGrid) -> Grid {
+        if !Grid::check_correct_size(&g) {
             panic!("Input grid (CellGrid) hadnt had a quadratic size");
         }
 
-        let s = g.len().isqrt();
-        return Grid {
-            grid: g.clone(),
+        let size = g.len();
+        let s = size.isqrt();
+        let mut grid = Grid {
+            grid: g,
+            needs_new_find: vec![Self::static_full_mask(size); size],
             box_size: (s, s),
             solutions: Vec::new(),
         };
+        grid.find_all_remains_in_all_cells();
+        return grid;
     }
     // Constructor:
+    #[allow(dead_code)]
     pub fn new_empty_quadratic_box(size: usize) -> Grid {
         let s = size.isqrt();
         return Grid {
             grid: vec![vec![Cell::new_empty(); size]; size],
+            needs_new_find: vec![Self::static_full_mask(size); size],
             box_size: (s, s),
             solutions: Vec::new(),
         };
     }
     // Constructor:
-    pub fn new_from_usize_grid_quadratic_box(u_g: &Vec<Vec<Option<usize>>>) -> Grid {
+    #[allow(dead_code)]
+    pub fn new_from_u8_grid_quadratic_box(u_g: &Vec<Vec<Option<ValType>>>) -> Grid {
         let mut res = Vec::new();
 
         for x in 0..u_g.len() {
@@ -58,26 +74,31 @@ impl Grid {
             }
         }
 
-        return Grid::new_from_grid_quadratic_box(&res);
+        return Grid::new_from_grid_quadratic_box(res);
     }
 
     // Constructors if box size is not quadratic:
-    pub fn new_from_grid_rectangle_box(grid: &CellGrid, wideness: usize) -> Grid {
-        if grid.len() < wideness {
+    #[allow(dead_code)]
+    pub fn new_from_grid_rectangle_box(g: CellGrid, wideness: usize) -> Grid {
+        if g.len() < wideness {
             panic!("The input box is to be wider than the whole sudoku");
         }
-        if !Grid::check_correct_size(grid) {
+        if !Grid::check_correct_size(&g) {
             panic!("The input sudoku has different sizes in x and y direction.!");
         }
 
-        let height = grid.len() / wideness;
-        return Grid {
-            grid: grid.clone(),
+        let height = g.len() / wideness;
+        let mut grid = Grid {
+            grid: g,
+            needs_new_find: vec![Self::static_full_mask(wideness); wideness],
             box_size: (wideness, height),
             solutions: Vec::new(),
         };
+        grid.find_all_remains_in_all_cells();
+        return grid;
     }
     // Constructor:
+    #[allow(dead_code)]
     pub fn new_empty_rectangle_box(total_size: usize, wideness: usize) -> Grid {
         if total_size < wideness {
             panic!("The input box is to be wider than the whole sudoku");
@@ -86,13 +107,15 @@ impl Grid {
         let height = total_size / wideness;
         return Grid {
             grid: vec![vec![Cell::new_empty(); total_size]; total_size],
+            needs_new_find: vec![Self::static_full_mask(wideness); wideness],
             box_size: (wideness, height),
             solutions: Vec::new(),
         };
     }
     // Constructor:
-    pub fn new_from_usize_grid_rectangle_box(
-        u_g: &Vec<Vec<Option<usize>>>,
+    #[allow(dead_code)]
+    pub fn new_from_valtype_grid_rectangle_box(
+        u_g: &Vec<Vec<Option<ValType>>>,
         wideness: usize,
     ) -> Grid {
         let mut res = Vec::new();
@@ -104,7 +127,7 @@ impl Grid {
             }
         }
 
-        return Grid::new_from_grid_rectangle_box(&res, wideness);
+        return Grid::new_from_grid_rectangle_box(res, wideness);
     }
 
     // Solver:
@@ -146,78 +169,46 @@ impl Grid {
     }
     */
 
-    fn find_possible_options_for_cell(&self, cell_pos: (usize, usize)) -> Vec<usize> {
-        let mut found_nums = Vec::new();
+    fn find_options_for_cell(&self, cell_pos: (usize, usize)) -> Mask {
+        let mut used_nums: Mask = 0b0;
 
-        let t_measure = Instant::now();
-        let t_measure_h = Instant::now();
         // horizontal x=const
         for y in 0..self.total_size() {
-            // skip input pos
-            if y == cell_pos.1 { continue; }
-
-            match self.grid[cell_pos.0][y].value {
-                Some(val) => found_nums.push(val),
-                None => {}
-            }
+            used_nums |= self.grid[cell_pos.0][y].value_as_bits();
         }
-        println!("Time elapsed for horizontal: {}", t_measure_h.elapsed().as_nanos());
 
-        let t_measure_v = Instant::now();
         // vertical y=const
         for x in 0..self.total_size() {
-            // skip input pos
-            if x == cell_pos.0 { continue; }
-
-            match self.grid[x][cell_pos.1].value {
-                Some(val) => found_nums.push(val),
-                None => {}
-            }
+            used_nums |= self.grid[x][cell_pos.1].value_as_bits();
         }
-        println!("Time elapsed for vertical: {}", t_measure_v.elapsed().as_nanos());
 
-        // inside box
-        let mut box_of_pos = (0, 0);
-        let pos_in_box = self.abs_pos_to_box_pos(cell_pos, &mut box_of_pos);
+        // Inside Box:
+        let mut box_func = |x:usize, y:usize, box_of_pos: (usize, usize), g: &Grid| {
+            let global_pos = g.box_pos_to_abs_pos((x, y), box_of_pos);
+            used_nums |= g.grid[global_pos.0][global_pos.1].value_as_bits();
+        };
+        Self::loop_all_in_box_of_pos(self, cell_pos, &mut box_func);
+        //println!("Time elapsed for box: {}", t_measure_b.elapsed().as_nanos());
+        //println!(
+        //    "Time elapsed for getting options: {}",
+        //    t_measure.elapsed().as_nanos()
+        //);
 
-        let t_measure_b = Instant::now();
-        // loop through box
-        for x in 0..self.box_size.0 {
-            for y in 0..self.box_size.1 {
-                // skip input pos
-                if x == pos_in_box.0 && y == pos_in_box.1 {
-                    continue;
-                }
-
-                let global_pos = self.box_pos_to_abs_pos((x, y), box_of_pos);
-
-                match self.grid[global_pos.0][global_pos.1].value {
-                    Some(val) => found_nums.push(val),
-                    None => {}
-                }
-            }
-        }
-        println!("Time elapsed for box: {}", t_measure_b.elapsed().as_nanos());
-        println!("Time elapsed for getting options: {}", t_measure.elapsed().as_nanos());
-
-        let mut remaining_nums = self.one_to_last_values();
-
-        let t_measure_sort = Instant::now();
-        // keep all nums that werent found:
-        // in other words: every number that occurs in both lists should be removed
-        remaining_nums.retain(|n| !found_nums.contains(n));
-        println!("Time elapsed for sorting: {}", t_measure_sort.elapsed().as_nanos());
-
-        return remaining_nums;
+        let rem_nums = !used_nums & self.full_mask();
+        //println!("Pos: {:?} remaining as bits: {rem_nums:b}", cell_pos);
+        return rem_nums;
     }
 
-    fn find_and_set_all_cells(&mut self) {
+    fn find_all_remains_in_all_cells(&mut self) {
         let do_for_all = |x: usize, y: usize, g: &mut Grid| {
             match g.grid[x][y].value {
                 Some(_) => {}
                 None => {
-                    g.grid[x][y].options_left = g.find_possible_options_for_cell((x, y));
-                    //println!("found options of ({},{}): {:?}", x,y,g.find_possible_options_for_cell((x,y)));
+                    let pos_mask = g.needs_new_find[x] & g.usize_to_mask(y);
+                    if pos_mask != 0 {
+                        g.grid[x][y].options_left = g.find_options_for_cell((x, y));
+                        g.needs_new_find[x] ^= pos_mask;
+                    }
                 }
             };
         };
@@ -226,14 +217,13 @@ impl Grid {
     }
 
     fn recursive_solve(&mut self, calc_all_sol: bool) -> bool {
-        let time_measure = Instant::now();
-        self.find_and_set_all_cells();
-        println!("Time elapsed for setting all cells: {}", time_measure.elapsed().as_nanos());
+        //let time_measure = Instant::now();
+        self.find_all_remains_in_all_cells();
 
         let mut empty_cells = Vec::new();
-        Grid::loop_all_mut_mut(self,
-            &mut |x, y, grid: &mut Grid|
-            match grid.grid[x][y].value {
+        Grid::loop_all_mut_mut(
+            self,
+            &mut |x, y, grid: &mut Grid| match grid.grid[x][y].value {
                 Some(_) => {}
                 None => empty_cells.push((x, y)),
             },
@@ -242,9 +232,10 @@ impl Grid {
 
         // if there are no empty cells, the sudoku is solved
         if empty_cells.len() == 0 {
-            let mut new_sol = vec![vec![0usize; self.total_size()]; self.total_size()];
+            let mut new_sol = vec![vec![0u8; self.total_size()]; self.total_size()];
             // unwrap consumes the Option<T>, thats why its cloned before
-            Grid::loop_all_mut_mut( self,
+            Grid::loop_all_mut_mut(
+                self,
                 &mut |x, y, grid: &mut Grid| {
                     new_sol[x][y] = grid.grid[x][y].value.clone().unwrap();
                 },
@@ -254,35 +245,39 @@ impl Grid {
             return true;
         }
 
-        /*
-        self.print_grid();
-        for c in &empty_cells {
-            println!("found at {:?}: {:?}", c, self.grid[c.0][c.1].options_left);
-        }
-        */
-
         // if there are empty cells, sort by remaining options:
         empty_cells.sort_by(|a: &(usize, usize), b: &(usize, usize)| {
-            self.grid[a.0][a.1].options_left.len()
-                .cmp(&self.grid[b.0][b.1].options_left.len())
+            self.grid[a.0][a.1]
+                .options_left
+                .count_ones()
+                .cmp(&self.grid[b.0][b.1].options_left.count_ones())
         });
 
         // if the first cell has zero options left, backtrack one step:
-        if self.grid[empty_cells[0].0][empty_cells[0].1].options_left.len()== 0 { return false; }
+        if self.grid[empty_cells[0].0][empty_cells[0].1]
+            .options_left.count_ones() == 0
+        {
+            return false;
+        }
 
         let mut at_least_one_workes = false;
         let old_value = self.grid[empty_cells[0].0][empty_cells[0].1].value;
 
         // make immutable list of nums to try, just to make sure nothing will
         // get overwritten when continuing to solve
-        let options_to_try = self.grid[empty_cells[0].0][empty_cells[0].1]
-            .options_left;
+        let mut options_to_try = self.grid[empty_cells[0].0][empty_cells[0].1].options_left;
 
-        for try_num in options_to_try {
-            //println!("Trying {}", try_num);
+        // loop through all options left in the cell
+        while options_to_try != 0 {
+            let try_num = Self::mask_to_first_in_valtype(options_to_try);
+
             self.grid[empty_cells[0].0][empty_cells[0].1].value = Some(try_num);
+            self.make_all_needing_new_find(empty_cells[0]);
+
+            //self.print_grid();
+            //self.print_needs_new_find();
+
             let worked = self.recursive_solve(calc_all_sol);
-            // if its solved, the result will already be saved at this point
 
             if worked {
                 at_least_one_workes = true;
@@ -291,6 +286,9 @@ impl Grid {
                     return true;
                 }
             }
+            self.make_all_needing_new_find(empty_cells[0]);
+
+            options_to_try &= options_to_try - 1;
         }
 
         // Reset value to old_value
@@ -342,10 +340,70 @@ impl Grid {
         }
     }
 
+    fn loop_all_in_box_of_pos_mut_mut<Func>(g: &mut Self, pos: (usize, usize), f: &mut Func)
+    where 
+        Func: FnMut(usize, usize,(usize, usize), &mut Grid),
+    {
+        // inside box
+        let mut box_of_pos = (0, 0);
+        let _pos_in_box = g.abs_pos_to_box_pos(pos, &mut box_of_pos);
+
+        //let t_measure_b = Instant::now();
+        // loop through box
+        for x in 0..g.box_size.0 {
+            for y in 0..g.box_size.1 {
+                f(x,y,box_of_pos,g);
+            }
+        }
+    }
+
+    fn loop_all_in_box_of_pos<Func>(g: &Self, pos:(usize, usize), f: &mut Func) 
+        where Func: FnMut (usize, usize, (usize, usize), &Grid),
+    {
+        // inside box
+        let mut box_of_pos = (0, 0);
+        let _pos_in_box = g.abs_pos_to_box_pos(pos, &mut box_of_pos);
+
+        //let t_measure_b = Instant::now();
+        // loop through box
+        for x in 0..g.box_size.0 {
+            for y in 0..g.box_size.1 {
+                f(x,y,box_of_pos,g);
+            }
+        }
+
+    }
+ 
+    fn make_all_needing_new_find(&mut self, pos: (usize, usize)){
+        // set needs_new_find respectively:
+        for x in 0..self.total_size() {
+            self.make_one_needing_new_find((x, pos.1));
+        }
+        // vertical 
+        for y in 0..self.total_size() {
+            self.make_one_needing_new_find((pos.0, y));
+        }
+        // box:
+        let mut f_box = |x:usize, y:usize, box_of_pos: (usize, usize), g: &mut Grid|{
+            let global_pos = g.box_pos_to_abs_pos((x,y), box_of_pos);
+            g.make_one_needing_new_find(global_pos);
+        };
+        Self::loop_all_in_box_of_pos_mut_mut(self, pos, &mut f_box);
+    }
+    fn make_one_needing_new_find(&mut self, pos_to_change: (usize, usize)) {
+        self.needs_new_find[pos_to_change.0] |= self.usize_to_mask(pos_to_change.1);
+    }
+
+    fn mask_to_first_in_valtype(m: Mask) -> ValType {
+        return (m.trailing_zeros() + 1).try_into().unwrap();
+    }
+    fn usize_to_mask(&self, u: usize) -> Mask {
+        return 1u64 << self.total_size() -u -1;
+    }
     /*
-        fn find_box_size(total_len: usize) -> (usize, usize) {
+        fn find_box_size(total_len: Mask) -> (Mask, Mask) {
             let int_root = total_len.isqrt();
-            let float_root = (total_len as f64).sqrt() as usize;
+            let float_root = (total_len as f64).sqrt() as Mask;
 
             if int_root == float_root {
                 // The box is quadratic
@@ -369,7 +427,7 @@ impl Grid {
 /*
 use std::cmp::Ordering;
 
-struct BoxSizeComparer { pub value: (usize, usize), }
+struct BoxSizeComparer { pub value: (Mask, Mask), }
 
 impl Ord for BoxSizeComparer { fn cmp(&self, other: &Self) -> Ordering { return (self.value.0.abs_diff(self.value.1)).cmp(&other.value.0.abs_diff(other.value.1)); } }
 impl PartialOrd for BoxSizeComparer { fn partial_cmp(&self, other: &Self) -> Option<Ordering> { return Some(self.cmp(other)) } }

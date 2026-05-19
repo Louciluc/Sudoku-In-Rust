@@ -1,37 +1,46 @@
-
 pub mod wrongness;
-use wrongness::Wrongness;
+
+pub use super::*;
 
 use std::fmt;
-pub fn cell_fn(){
+pub fn cell_fn() {
     println!("Hi from cell.rs");
 }
 
 #[derive(Clone)]
 pub struct Cell {
-    pub value : Option<usize>,
-    pub options_left : Vec<usize>,
-    pub is_def_right : bool,
+    pub value: Option<u8>,
+    // ...00000001 -> 1 is possible in this cell
+    // ...00010011 -> 1,2,5 are possible in this cell
+    pub options_left: Mask,
+    pub is_def_right: bool,
     pub wrongn: Wrongness,
     //pub position : (usize, usize),
 }
 
 impl Cell {
-    pub fn new(value: Option<usize>,is_def_right: bool) -> Self {
-        return Cell{
-            value : value,
-            is_def_right : is_def_right,
-            options_left : Vec::new(),
+    pub fn new(value: Option<ValType>, is_def_right: bool) -> Self {
+        return Cell {
+            value: value,
+            is_def_right: is_def_right,
+            options_left: Mask::MAX,
             wrongn: Wrongness::Correct,
         };
     }
 
     pub fn new_empty() -> Self {
-        return Cell{
+        return Cell {
             value: None,
             is_def_right: false,
-            options_left : Vec::new(),
+            options_left: Mask::MAX,
             wrongn: Wrongness::Correct,
+        };
+    }
+
+    pub fn value_as_bits(&self) -> u64 {
+        match self.value {
+            Some(n) => return 1 << (n - 1),
+            None => return 0b0,
         }
     }
 }

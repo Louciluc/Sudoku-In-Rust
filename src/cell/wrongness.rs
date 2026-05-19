@@ -1,4 +1,3 @@
-
 #[derive(Clone)]
 pub enum Wrongness {
     Correct,
@@ -7,5 +6,7 @@ pub enum Wrongness {
 }
 
 impl Wrongness {
-    pub fn new() -> Wrongness { return Wrongness::Correct; }
+    pub fn new() -> Wrongness {
+        return Wrongness::Correct;
+    }
 }

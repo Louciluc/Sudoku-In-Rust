@@ -1,7 +1,6 @@
-use color_print::{cprint, cformat};
+use color_print::{cformat, cprint};
 
 use super::*;
-
 
 impl Grid {
     pub fn print_grid(&self) {
@@ -22,14 +21,17 @@ impl Grid {
             match g.grid[x][y].value {
                 Some(_) => {
                     // when def_right -> cyan fg
-                    if g.grid[x][y].is_def_right { output = cformat!("<c>{}</c>", output); }
+                    if g.grid[x][y].is_def_right {
+                        output = cformat!("<c>{}</c>", output);
+                    }
 
                     // when wrong or responsible -> orange, yellow bg
                     match g.grid[x][y].wrongn {
                         Wrongness::Wrong => output = cformat!("<bg:#BF6900>{}</>", output),
                         Wrongness::Responsible => output = cformat!("<bg:#A38802>{}</>", output),
-                        _ => {},
-                    } },
+                        _ => {}
+                    }
+                }
                 None => output = cformat!("<#787878>{}</>", output),
             };
 
@@ -40,9 +42,10 @@ impl Grid {
             //
             // | when box ends ' ' in any other case
             if (y + 1) % g.box_count().0 == 0 && y + 1 != g.total_size() {
-                print!("|"); }
-            else {
-                print!(" "); }
+                print!("|");
+            } else {
+                print!(" ");
+            }
         };
         // That was for each row
         //
@@ -55,13 +58,18 @@ impl Grid {
                 for box_of_pos in 0..g.box_count().1 {
                     for pos_in_box in 0..g.box_size.0 {
                         // print '-' where anumber would be
-                        for _ in 0..g.total_size().to_string().len() { print!("-"); }
+                        for _ in 0..g.total_size().to_string().len() {
+                            print!("-");
+                        }
 
                         // print '+' at crosspoints (end of box)
-                        if (pos_in_box + 1) % g.box_size.1 == 0 && box_of_pos * g.box_size.1 + pos_in_box + 1 != g.total_size() {
-                            print!("+"); }
-                        else {
-                            print!(" "); }
+                        if (pos_in_box + 1) % g.box_size.1 == 0
+                            && box_of_pos * g.box_size.1 + pos_in_box + 1 != g.total_size()
+                        {
+                            print!("+");
+                        } else {
+                            print!(" ");
+                        }
                     }
                 }
                 println!("");
@@ -73,25 +81,37 @@ impl Grid {
     }
 
     pub fn print_all_solutions(&self) {
-        println!("\n{} solutions were found.", self.solutions.len());
+        println!("\n{} solution(s) found.", self.solutions.len());
         for (i, sol) in self.solutions.iter().enumerate() {
-            // copy all elments of one solution in a grid of Option<usize>:
+            // copy all elments of one solution in a grid of Option<Mask>:
             let mut tmp_vec = vec![vec![None; sol.len()]; sol.len()];
-            for x in 0..sol.len() { for y in 0..sol[0].len() {
-                tmp_vec[x][y] = Some(sol[x][y]); } }
+            for x in 0..sol.len() {
+                for y in 0..sol[0].len() {
+                    tmp_vec[x][y] = Some(sol[x][y]);
+                }
+            }
 
             println!("Solution: {}", i + 1);
 
-            // print that grid of Option<usize> as a sudoku Grid
-            let mut tmp = Grid::new_from_usize_grid_quadratic_box(&tmp_vec);
-            for x in 0..sol.len() { for y in 0..sol[0].len() {
-                tmp.grid[x][y].is_def_right = self.grid[x][y].is_def_right; } }
+            // print that grid of Option<u8> as a sudoku Grid
+            let mut tmp = Grid::new_from_u8_grid_quadratic_box(&tmp_vec);
+            for x in 0..sol.len() {
+                for y in 0..sol[0].len() {
+                    tmp.grid[x][y].is_def_right = self.grid[x][y].is_def_right;
+                }
+            }
 
             tmp.print_grid();
         }
     }
 
-    pub fn term_fn() {
-        print!("Hello from terminal.rs");
+    #[allow(dead_code)]
+    pub fn print_needs_new_find(&self) {
+        for x in 0..self.total_size() {
+            let row = self.needs_new_find[x];
+            let stri = format!("{row:b}");
+
+            println!("{}{}", "0".repeat(self.total_size()-stri.len()), stri);
+        }
     }
 }
