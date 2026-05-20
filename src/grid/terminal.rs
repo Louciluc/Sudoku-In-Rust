@@ -3,6 +3,27 @@ use color_print::{cformat, cprint};
 use super::*;
 
 impl Grid {
+    pub fn edit_sudoku(&mut self) {
+        let position = (0,0);
+        let backupGrid = self.clone();
+
+        //let pressedKey;
+
+        loop {
+
+        };
+    }
+    fn render_grid_ui(&self, pos:(usize, usize)) {
+        clearscreen::clear().expect("failed to clear screen");
+        println!("Your current position is {},{}", pos.0+1, pos.1+1);
+        let height_at_grid_start = 2;
+        self.print_grid();
+        println!("- Use arrow keys to move around\n
+            - Use numbers to enter a number\n
+            - \' \', \'.\', \'d\', \'x\' to delete a cell\n
+            - enter: save and exit\n
+            - c to cancel");
+    }
     pub fn print_grid(&self) {
         let max_str_size = self.total_size().to_string().len();
 
@@ -107,7 +128,7 @@ impl Grid {
 
     #[allow(dead_code)]
     pub fn print_needs_new_find(&self) {
-        for x in 0..self.total_size() {
+for x in 0..self.total_size() {
             let row = self.needs_new_find[x];
             let stri = format!("{row:b}");
 

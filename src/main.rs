@@ -6,6 +6,9 @@ use std::time::Instant;
 pub mod cell;
 use crate::cell::*;
 
+use rustyline::error::ReadlineError;
+use rustyline::{DefaultEditor, Result};
+
 // ! Make sure to change type declarations also in lib.rs
 pub type CellGrid = Vec<Vec<Cell>>;
 pub type Mask = u64;
@@ -14,8 +17,35 @@ pub type Mask = u64;
 pub type ValType = u8;
 
 #[allow(unused)]
-pub fn main() {
-    //println!("hello world");
+pub fn main() -> Result<()>{
+    let mut rl = DefaultEditor::new()?;
+    #[cfg(feature = "with-file-history")]
+    if rl.load_history("history.txt").is_err() {
+        println!("No previous history.");
+    }
+    loop {
+        let readline = rl.readline(">> ");
+        match readline {
+            Ok(line) => {
+                rl.add_history_entry(line.as_str())?;
+                println!("Line: {}", line);
+            },
+            Err(ReadlineError::Interrupted) => {
+                println!("CTRL-C");
+                break
+            },
+            Err(ReadlineError::Eof) => {
+                println!("CTRL-D");
+                break
+            },
+            Err(err) => {
+                println!("Error: {:?}", err);
+                break
+            }
+        }
+    }
+    #[cfg(feature = "with-file-history")]
+    rl.save_history("history.txt");
 
     let mut grid = VERY_HARD_SDK();
     let full_mask = grid.full_mask();
@@ -27,6 +57,7 @@ pub fn main() {
     grid.solve(true);
     println!("Time: {} milliseconds", timer.elapsed().as_millis());
     grid.print_all_solutions();
+    Ok(())
 }
 //#[allow(nonstandard_style)]
 //fn HARD_SDK() -> Grid {
