@@ -15,9 +15,9 @@ pub type ValType = u8;
 
 #[allow(unused)]
 pub fn main() {
-    println!("hello world");
+    //println!("hello world");
 
-    let mut grid = HARD_SDK();
+    let mut grid = VERY_HARD_SDK();
     let full_mask = grid.full_mask();
     //println!("full_mask: {full_mask:b}");
     //grid.print_needs_new_find();
@@ -28,19 +28,35 @@ pub fn main() {
     println!("Time: {} milliseconds", timer.elapsed().as_millis());
     grid.print_all_solutions();
 }
+//#[allow(nonstandard_style)]
+//fn HARD_SDK() -> Grid {
+//    return Grid::new_from_u8_grid_quadratic_box(&vec![
+//        vec![None,   Some(6),Some(1),None,   None,   Some(7),None,   None,   Some(3)],
+//        vec![None,   Some(9),Some(2),None,   None,   Some(3),None,   None,   None],
+//        vec![None,   None,   None,   None,   None,   None,   None,   None,   None],
+//
+//        vec![None,   None,   Some(8),Some(5),Some(3),None,   None,   None,   None],
+//        vec![None,   None,   None,   None,   None,   None,   Some(5),None,   Some(4)],
+//        vec![Some(5),None,   None,   None,   None,   Some(8),None,   None,   None],
+//
+//        vec![None,   Some(4),None,   None,   None,   None,   None,   None,   Some(1)],
+//        vec![None,   None,   None,   Some(1),Some(6),None,   Some(8),None,   None],
+//        vec![Some(6),None,   None,   None,   None,   None,   None,   None,   None],
+//    ]);
+//}
 #[allow(nonstandard_style)]
-fn HARD_SDK() -> Grid {
+fn VERY_HARD_SDK() -> Grid {
     return Grid::new_from_u8_grid_quadratic_box(&vec![
-        vec![None,   Some(6),Some(1),None,   None,   Some(7),None,   None,   Some(3)],
-        vec![None,   Some(9),Some(2),None,   None,   Some(3),None,   None,   None],
-        vec![None,   None,   None,   None,   None,   None,   None,   None,   None],
+        vec![Some(6),None,  None,   None,   None,   None,   None,   Some(9),Some(2)],
+        vec![None,  None,   None,   Some(8),None,   Some(1),None,   None,   None],
+        vec![None,  None,   None,   None,   None,   None,   None,   None,   None],
 
-        vec![None,   None,   Some(8),Some(5),Some(3),None,   None,   None,   None],
-        vec![None,   None,   None,   None,   None,   None,   Some(5),None,   Some(4)],
-        vec![Some(5),None,   None,   None,   None,   Some(8),None,   None,   None],
+        vec![None,  None,   None,   Some(7),Some(2),None,   None,   Some(4),None],
+        vec![Some(1),Some(8),None,  None,   None,   None,   Some(5),None,   None],
+        vec![None,  None,   None,   None,   None,   None,   None,   None,   None],
 
-        vec![None,   Some(4),None,   None,   None,   None,   None,   None,   Some(1)],
-        vec![None,   None,   None,   Some(1),Some(6),None,   Some(8),None,   None],
-        vec![Some(6),None,   None,   None,   None,   None,   None,   None,   None],
-    ]);
+        vec![Some(2),Some(9),None,  None,   Some(6),None,   None,   None,   None],
+        vec![None,  None,   None,   Some(3),None,   None,   Some(8),None,   None],
+        vec![None,  None,   None,   None,   None,   None,   None,   None,   Some(7)]
+    ])
 }
