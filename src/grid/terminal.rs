@@ -2,48 +2,52 @@ use color_print::{cformat, cprint};
 
 use super::*;
 
+use std::io::{stdout, Write};
 use crossterm::{
+    cursor::MoveTo,
+    execute,
     event::{read, Event, KeyCode},
-    terminal::{enable_raw_mode, disable_raw_mode},
+    terminal::{Clear, ClearType, enable_raw_mode, disable_raw_mode},
 };
 
 impl Grid {
     pub fn edit_sudoku(&mut self) {
-        enable_raw_mode().unwrap();
+        let _ = enable_raw_mode().unwrap();
 
         let mut position = (0usize, 0usize);
         let backup_grid = self.clone();
 
         loop {
-            self.render_grid_ui(position);
+            // x and y are intentionally swapped
+            self.render_grid_ui((position.1, position.0));
 
             if let Event::Key(event) = read().unwrap() {
                 match event.code {
                     // Exit and save
-                    KeyCode::Enter => {
+                    KeyCode::Enter | KeyCode::Char('q') => {
                         break;
                     }
                     // cancel
-                    KeyCode::Char('c') => {
+                    KeyCode::Char('c') | KeyCode::Esc => {
                         *self = backup_grid;
                         break;
                     }
                     // Movement
                     KeyCode::Left | KeyCode::Char('h') => {
-                        if position.0 > 0 { position.0 -= 1; }
-                        else { position.0 = self.total_size(); }
+                        if position.1 > 0 { position.1 -= 1; }
+                        else { position.1 = self.total_size() - 1; }
                     }
                     KeyCode::Right | KeyCode::Char('l') => {
-                        if position.0 + 1 < self.total_size() { position.0 += 1; }
-                        else { position.0 = 0; }
+                        if position.1 + 1 < self.total_size() - 1 { position.1 += 1; }
+                        else { position.1 = 0; }
                     }
                     KeyCode::Up | KeyCode::Char('k') => {
-                        if position.1 > 0 { position.1 -= 1; }
-                        else { position.1 = self.total_size(); }
+                        if position.0 > 0 { position.0 -= 1; }
+                        else { position.0 = self.total_size() - 1; }
                     }
                     KeyCode::Down | KeyCode::Char('j') => {
-                        if position.1 + 1 < self.total_size() {position.1 += 1; }
-                        else { position.1 = 0; }
+                        if position.0 + 1 < self.total_size() - 1 {position.0 += 1; }
+                        else { position.0 = 0; }
                     }
 
                     // Numbers
@@ -52,26 +56,62 @@ impl Grid {
                     // Delete 
                     KeyCode::Backspace 
                     | KeyCode::Delete 
-                    | KeyCode::char('x')
-                    | KeyCode::char('d')
-                    | KeyCode::char('.') => {
+                    | KeyCode::Char('x')
+                    | KeyCode::Char('d')
+                    | KeyCode::Char('.')
+                    | KeyCode::Char(' ') => {
                         self.grid[position.0][position.1].value = None;
                         self.make_all_needing_new_find(position);
                     }
+
+                    KeyCode::Tab => {}
+                    KeyCode::Home => {}
+                    KeyCode::PageUp => {}
+                    KeyCode::PageDown => {}
+                    KeyCode::End => { position = (self.total_size(), self.total_size()); }
+                    KeyCode::BackTab => {}
+                    KeyCode::Insert => {}
+                    KeyCode::Null => {}
+                    KeyCode::F(_u8) => {}
+                    KeyCode::CapsLock => {}
+                    KeyCode::ScrollLock => {}
+                    KeyCode::NumLock => {}
+                    KeyCode::PrintScreen => {}
+                    KeyCode::Pause => {}
+                    KeyCode::Menu => {}
+                    KeyCode::KeypadBegin => {}
+                    _ => {}
                 }
             }
         }
+        execute!(stdout(), Clear(ClearType::All), MoveTo(0,0)).unwrap();
+        let _ = disable_raw_mode();
     }
     fn render_grid_ui(&self, pos:(usize, usize)) {
-        clearscreen::clear().expect("failed to clear screen");
-        println!("Your current position is {},{}", pos.0+1, pos.1+1);
-        let height_at_grid_start = 2;
+        let mut stdout = stdout();
+
+        execute!(
+            stdout,
+            MoveTo(0,0),
+            Clear(ClearType::All)
+        ).unwrap();
+
+        print!(
+            "Your current position is {},{}\n\r",
+            pos.0 + 1,
+            pos.1 + 1
+        );
+
         self.print_grid();
-        println!("- Use arrow keys to move around\n
-            - Use numbers to enter a number\n
-            - \' \', \'.\', \'d\', \'x\' to delete a cell\n
-            - enter: save and exit\n
-            - c to cancel");
+
+        print!("- Use arrow keys to move around\n\r- Use numbers to enter a number\n\r- \' \', \'.\', \'d\', \'x\' to delete a cell\n\r- enter: save and exit\n\r- c to cancel\n\r");
+
+        let cursorpos: (u16, u16);
+        todo!();
+        execute!(
+            stdout,
+            MoveTo(pos.0.try_into().unwrap(), pos.1.try_into().unwrap()),
+        ).unwrap();
     }
     pub fn print_grid(&self) {
         let max_str_size = self.total_size().to_string().len();
@@ -121,7 +161,7 @@ impl Grid {
         //
         // Now the spacing for the boxes between certain rows
         let print_horiz_spacing = |x: usize, g: &Grid| {
-            println!("");
+            print!("\r\n");
             if (x + 1) % g.box_count().1 == 0 && x + 1 != g.total_size() {
                 // Were counting in boxes here:
                 // To make the crosspoint between colums and rows
@@ -142,7 +182,7 @@ impl Grid {
                         }
                     }
                 }
-                println!("");
+                print!("\r\n");
             }
         };
 

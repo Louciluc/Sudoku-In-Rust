@@ -17,6 +17,7 @@ pub type ValType = u8;
 pub fn main(){
     let mut grid = VERY_HARD_SDK();
     let full_mask = grid.full_mask();
+    grid.edit_sudoku();
     //println!("full_mask: {full_mask:b}");
     //grid.print_needs_new_find();
 
