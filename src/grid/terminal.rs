@@ -2,16 +2,65 @@ use color_print::{cformat, cprint};
 
 use super::*;
 
+use crossterm::{
+    event::{read, Event, KeyCode},
+    terminal::{enable_raw_mode, disable_raw_mode},
+};
+
 impl Grid {
     pub fn edit_sudoku(&mut self) {
-        let position = (0,0);
-        let backupGrid = self.clone();
+        enable_raw_mode().unwrap();
 
-        //let pressedKey;
+        let mut position = (0usize, 0usize);
+        let backup_grid = self.clone();
 
         loop {
+            self.render_grid_ui(position);
 
-        };
+            if let Event::Key(event) = read().unwrap() {
+                match event.code {
+                    // Exit and save
+                    KeyCode::Enter => {
+                        break;
+                    }
+                    // cancel
+                    KeyCode::Char('c') => {
+                        *self = backup_grid;
+                        break;
+                    }
+                    // Movement
+                    KeyCode::Left | KeyCode::Char('h') => {
+                        if position.0 > 0 { position.0 -= 1; }
+                        else { position.0 = self.total_size(); }
+                    }
+                    KeyCode::Right | KeyCode::Char('l') => {
+                        if position.0 + 1 < self.total_size() { position.0 += 1; }
+                        else { position.0 = 0; }
+                    }
+                    KeyCode::Up | KeyCode::Char('k') => {
+                        if position.1 > 0 { position.1 -= 1; }
+                        else { position.1 = self.total_size(); }
+                    }
+                    KeyCode::Down | KeyCode::Char('j') => {
+                        if position.1 + 1 < self.total_size() {position.1 += 1; }
+                        else { position.1 = 0; }
+                    }
+
+                    // Numbers
+                    //KeyCode::Char(c @ '1'..=)
+                    //
+                    // Delete 
+                    KeyCode::Backspace 
+                    | KeyCode::Delete 
+                    | KeyCode::char('x')
+                    | KeyCode::char('d')
+                    | KeyCode::char('.') => {
+                        self.grid[position.0][position.1].value = None;
+                        self.make_all_needing_new_find(position);
+                    }
+                }
+            }
+        }
     }
     fn render_grid_ui(&self, pos:(usize, usize)) {
         clearscreen::clear().expect("failed to clear screen");

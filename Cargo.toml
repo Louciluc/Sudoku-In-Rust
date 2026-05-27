@@ -6,4 +6,5 @@ edition = "2024"
 [dependencies]
 clearscreen = "4.0.6"
 color-print = "0.3.7"
+crossterm = "0.29.0"
 tick = "0.3.0"

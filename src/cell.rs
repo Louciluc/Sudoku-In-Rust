@@ -43,6 +43,10 @@ impl Cell {
             None => return 0b0,
         }
     }
+
+    pub fn mask_to_first_valtype(m: Mask) -> ValType {
+        return (m.trailing_zeros() + 1).try_into().unwrap();
+    }
 }
 
 impl fmt::Display for Cell {

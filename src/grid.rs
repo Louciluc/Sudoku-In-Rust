@@ -269,7 +269,7 @@ impl Grid {
 
         // loop through all options left in the cell
         while options_to_try != 0 {
-            let try_num = Self::mask_to_first_in_valtype(options_to_try);
+            let try_num = Cell::mask_to_first_valtype(options_to_try);
 
             self.grid[empty_cells[0].0][empty_cells[0].1].value = Some(try_num);
             self.make_all_needing_new_find(empty_cells[0]);
@@ -394,9 +394,6 @@ impl Grid {
         self.needs_new_find[pos_to_change.0] |= self.usize_to_mask(pos_to_change.1);
     }
 
-    fn mask_to_first_in_valtype(m: Mask) -> ValType {
-        return (m.trailing_zeros() + 1).try_into().unwrap();
-    }
     fn usize_to_mask(&self, u: usize) -> Mask {
         return 1u64 << self.total_size() -u -1;
     }
