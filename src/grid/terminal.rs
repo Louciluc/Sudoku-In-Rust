@@ -158,14 +158,11 @@ impl Grid {
         // + cell_w to get to the end of the input field (cell_w-1 to not go to the whitespace after)
         let x = pos_in_grid.0 * cell_w + pos_in_grid.0 + cell_w - 1;
 
-        // box_size.1 == box_count.0 <- true
+        // y position is box_size.0 (x pos)
         // the box where the position is in:
         let box_y: u16 = (pos_in_grid.1 / self.box_size.0).try_into().unwrap();
         // the position inside the box:
         let rem_y: u16 = <usize as TryInto<u16>>::try_into(pos_in_grid.1 % self.box_size.0).unwrap();
-        print!("pos: {:?}", pos_in_grid);
-        print!("box in y dir: {}, pos inside box: {}", box_y, rem_y);
-        print!("box_size x: {}", self.box_size.0);
         // I have no idea why its box_size.0 but it works
         // box_y for spacing
         return (x.try_into().unwrap(), box_y * <usize as TryInto<u16>>::try_into(self.box_size.0).unwrap() + box_y + rem_y + space_above);
