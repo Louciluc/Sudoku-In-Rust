@@ -24,8 +24,9 @@ pub fn main(){
     grid.print_grid();
     let timer = Instant::now();
     grid.solve(true);
-    println!("Time: {} milliseconds", timer.elapsed().as_millis());
+    let solving_time = timer.elapsed().as_millis();
     grid.print_all_solutions();
+    println!("Time to solve: {} milliseconds\n\rTotal time: {} milliseconds", solving_time, timer.elapsed().as_millis());
 }
 //#[allow(nonstandard_style)]
 //fn HARD_SDK() -> Grid {

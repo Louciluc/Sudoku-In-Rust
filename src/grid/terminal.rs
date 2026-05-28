@@ -61,6 +61,7 @@ impl Grid {
                     | KeyCode::Char('.')
                     | KeyCode::Char(' ') => {
                         self.grid[position.0][position.1].value = None;
+                        self.grid[position.0][position.1].is_def_right = false;
                         self.make_all_needing_new_find(position);
                     }
 
@@ -68,7 +69,7 @@ impl Grid {
                     KeyCode::Home => {}
                     KeyCode::PageUp => {}
                     KeyCode::PageDown => {}
-                    KeyCode::End => { position = (self.total_size(), self.total_size()); }
+                    KeyCode::End => { position = (self.total_size() - 1, self.total_size() - 1); }
                     KeyCode::BackTab => {}
                     KeyCode::Insert => {}
                     KeyCode::Null => {}
@@ -104,14 +105,20 @@ impl Grid {
 
         self.print_grid();
 
-        print!("- Use arrow keys to move around\n\r- Use numbers to enter a number\n\r- \' \', \'.\', \'d\', \'x\' to delete a cell\n\r- enter: save and exit\n\r- c to cancel\n\r");
+        print!("- Use arrow keys to move around\n\r- Use numbers to enter a number\n\r- \' \', \'.\', \'d\', \'x\' to delete a cell\n\r- enter or \'q\' to save and exit\n\r- c to cancel\n\r");
 
-        let cursorpos: (u16, u16);
-        todo!();
+        let cursorpos = self.get_cursor_pos(pos, 1u16);
         execute!(
             stdout,
-            MoveTo(pos.0.try_into().unwrap(), pos.1.try_into().unwrap()),
+            MoveTo(cursorpos.0, cursorpos.1),
         ).unwrap();
+    }
+    // Its u16, because MoveTo() function takes u16
+    fn get_cursor_pos(&self, pos_in_grid: (usize, usize), space_above: u16) -> (u16, u16) {
+        let x = pos_in_grid.0 * 2;
+        let box_y: u16 = (pos_in_grid.1 / self.box_size.0).try_into().unwrap();
+        let rem_y: u16 = <usize as TryInto<u16>>::try_into((pos_in_grid.1 % self.box_size.0)).unwrap() + space_above;
+        return (x.try_into().unwrap(), box_y * <usize as TryInto<u16>>::try_into((self.box_size.1+1)).unwrap() + rem_y);
     }
     pub fn print_grid(&self) {
         let max_str_size = self.total_size().to_string().len();
@@ -201,7 +208,7 @@ impl Grid {
                 }
             }
 
-            println!("Solution: {}", i + 1);
+            println!("\n\rSolution: {}", i + 1);
 
             // print that grid of Option<u8> as a sudoku Grid
             let mut tmp = Grid::new_from_u8_grid_quadratic_box(&tmp_vec);
