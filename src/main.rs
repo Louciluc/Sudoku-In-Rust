@@ -13,10 +13,12 @@ pub type Mask = u64;
 // contain more than 8 bits:
 pub type ValType = u8;
 
-#[allow(unused)]
+//#[allow(unused)]
 pub fn main(){
+    let mut grid4x4 = Grid::new_empty_rectangle_box(8, 8);
+    grid4x4.edit_sudoku();
     let mut grid = VERY_HARD_SDK();
-    let full_mask = grid.full_mask();
+    //let full_mask = grid.full_mask();
     grid.edit_sudoku();
     //println!("full_mask: {full_mask:b}");
     //grid.print_needs_new_find();
@@ -30,7 +32,7 @@ pub fn main(){
 }
 //#[allow(nonstandard_style)]
 //fn HARD_SDK() -> Grid {
-//    return Grid::new_from_u8_grid_quadratic_box(&vec![
+//    return Grid::new_from_raw_grid_quadratic_box(&vec![
 //        vec![None,   Some(6),Some(1),None,   None,   Some(7),None,   None,   Some(3)],
 //        vec![None,   Some(9),Some(2),None,   None,   Some(3),None,   None,   None],
 //        vec![None,   None,   None,   None,   None,   None,   None,   None,   None],
@@ -46,7 +48,7 @@ pub fn main(){
 //}
 #[allow(nonstandard_style)]
 fn VERY_HARD_SDK() -> Grid {
-    return Grid::new_from_u8_grid_quadratic_box(&vec![
+    return Grid::new_from_raw_grid_quadratic_box(&vec![
         vec![Some(6),None,  None,   None,   None,   None,   None,   Some(9),Some(2)],
         vec![None,  None,   None,   Some(8),None,   Some(1),None,   None,   None],
         vec![None,  None,   None,   None,   None,   None,   None,   None,   None],

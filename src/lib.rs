@@ -21,7 +21,7 @@ mod tests {
     use super::*;
 
     fn hard_sdk_sdk() -> Grid {
-        return Grid::new_from_u8_grid_quadratic_box(&vec![
+        return Grid::new_from_raw_grid_quadratic_box(&vec![
             vec![None,   Some(6),Some(1),None,   None,   Some(7),None,   None,   Some(3)],
             vec![None,   Some(9),Some(2),None,   None,   Some(3),None,   None,   None],
             vec![None,   None,   None,   None,   None,   None,   None,   None,   None],
@@ -37,7 +37,7 @@ mod tests {
     }
 
     fn mid_sdk_sdk() -> Grid {
-        return Grid::new_from_u8_grid_quadratic_box(&vec![
+        return Grid::new_from_raw_grid_quadratic_box(&vec![
             vec![None,   Some(8),Some(6),Some(9),None,   None,   None,   None,   None],
             vec![Some(5),Some(9),None,   Some(6),Some(2),None,   None,   None,   None],
             vec![Some(7),None,   None,   None,   None,   Some(1),None,   None,   None],

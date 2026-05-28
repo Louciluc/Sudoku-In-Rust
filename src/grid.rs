@@ -29,8 +29,14 @@ impl Grid {
     pub fn full_mask(&self) -> Mask {
         Self::static_full_mask(self.total_size())
     }
-    fn static_full_mask(size: usize) -> Mask {
-        (1u64 << size) - 1
+    fn static_full_mask(total_size: usize) -> Mask {
+        // shift overflow safe! e.g. 9:
+        // 1u64 << total_size      1000000000 <- doesnt work, since on size of 64 it would go to 65th bit
+        // 1u64 << total_size -1    100000000
+        // - 1                      011111111
+        // << 1                     111111110
+        // + 1                      111111111
+        (((1u64 << total_size -1) - 1) << 1) + 1
     }
 
     // Constructors if box size is quadratic:
@@ -53,18 +59,18 @@ impl Grid {
     }
     // Constructor:
     #[allow(dead_code)]
-    pub fn new_empty_quadratic_box(size: usize) -> Grid {
-        let s = size.isqrt();
+    pub fn new_empty_quadratic_box(box_size: usize) -> Grid {
+        let size = box_size * box_size;
         return Grid {
             grid: vec![vec![Cell::new_empty(); size]; size],
             needs_new_find: vec![Self::static_full_mask(size); size],
-            box_size: (s, s),
+            box_size: (box_size, box_size),
             solutions: Vec::new(),
         };
     }
     // Constructor:
     #[allow(dead_code)]
-    pub fn new_from_u8_grid_quadratic_box(u_g: &Vec<Vec<Option<ValType>>>) -> Grid {
+    pub fn new_from_raw_grid_quadratic_box(u_g: &Vec<Vec<Option<ValType>>>) -> Grid {
         let mut res = Vec::new();
 
         for x in 0..u_g.len() {
@@ -74,24 +80,28 @@ impl Grid {
             }
         }
 
-        return Grid::new_from_grid_quadratic_box(res);
+        return Self::new_from_grid_quadratic_box(res);
     }
 
     // Constructors if box size is not quadratic:
     #[allow(dead_code)]
-    pub fn new_from_grid_rectangle_box(g: CellGrid, wideness: usize) -> Grid {
-        if g.len() < wideness {
-            panic!("The input box is to be wider than the whole sudoku");
+    pub fn new_from_grid_rectangle_box(g: CellGrid, box_wideness: usize) -> Grid {
+        let size = g.len();
+        if size < box_wideness {
+            panic!("The input box is wider than the whole sudoku");
         }
         if !Grid::check_correct_size(&g) {
             panic!("The input sudoku has different sizes in x and y direction.!");
         }
 
-        let height = g.len() / wideness;
+        let height = size / box_wideness;
+        if height * box_wideness != size {
+            panic!("The input sudoku cannot have this box_wideness. Its not possible to split it in boxes with this wideness.")
+        }
         let mut grid = Grid {
             grid: g,
-            needs_new_find: vec![Self::static_full_mask(wideness); wideness],
-            box_size: (wideness, height),
+            needs_new_find: vec![Self::static_full_mask(size); size],
+            box_size: (box_wideness, height),
             solutions: Vec::new(),
         };
         grid.find_all_remains_in_all_cells();
@@ -99,25 +109,19 @@ impl Grid {
     }
     // Constructor:
     #[allow(dead_code)]
-    pub fn new_empty_rectangle_box(total_size: usize, wideness: usize) -> Grid {
-        if total_size < wideness {
-            panic!("The input box is to be wider than the whole sudoku");
-        }
-
-        let height = total_size / wideness;
+    pub fn new_empty_rectangle_box(box_wideness: usize, box_height: usize) -> Grid {
+        let size = box_wideness * box_height;
         return Grid {
-            grid: vec![vec![Cell::new_empty(); total_size]; total_size],
-            needs_new_find: vec![Self::static_full_mask(wideness); wideness],
-            box_size: (wideness, height),
+            grid: vec![vec![Cell::new_empty(); size]; size],
+            needs_new_find: vec![Self::static_full_mask(size); size],
+            // height and width are swapped intentionally since in [][] notations x has to be first
+            box_size: (box_height, box_wideness),
             solutions: Vec::new(),
         };
     }
     // Constructor:
     #[allow(dead_code)]
-    pub fn new_from_valtype_grid_rectangle_box(
-        u_g: &Vec<Vec<Option<ValType>>>,
-        wideness: usize,
-    ) -> Grid {
+    pub fn new_from_raw_grid_rectangle_box( u_g: &Vec<Vec<Option<ValType>>>, box_wideness: usize,) -> Grid {
         let mut res = Vec::new();
 
         for x in 0..u_g.len() {
@@ -127,7 +131,7 @@ impl Grid {
             }
         }
 
-        return Grid::new_from_grid_rectangle_box(res, wideness);
+        return Self::new_from_grid_rectangle_box(res, box_wideness);
     }
 
     // Solver:
