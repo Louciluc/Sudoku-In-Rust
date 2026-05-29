@@ -14,7 +14,9 @@ pub type Mask = u64;
 pub type ValType = u8;
 
 //#[allow(unused)]
-pub fn main(){
+pub fn main() -> std::io::Result<()> {
+    let mut read_sdk = Grid::read_txt("RectSdk.txt")?;
+    read_sdk.edit_sudoku();
     let mut grid4x4 = Grid::new_empty_rectangle_box(8, 8);
     grid4x4.edit_sudoku();
     let mut grid = VERY_HARD_SDK();
@@ -29,6 +31,7 @@ pub fn main(){
     let solving_time = timer.elapsed().as_millis();
     grid.print_all_solutions();
     println!("Time to solve: {} milliseconds\n\rTotal time: {} milliseconds", solving_time, timer.elapsed().as_millis());
+    return Ok(());
 }
 //#[allow(nonstandard_style)]
 //fn HARD_SDK() -> Grid {
