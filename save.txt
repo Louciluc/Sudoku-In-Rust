@@ -1,0 +1,15 @@
+# <- Comment
+# all numbers must be seperated by ' '
+# the end of one box must be '|'?n# all empty spaces must be '.', all cells containing a '.' will be skipped
+# if you have only one digit but your sudoku supports two, add another space in front
+#
+# E.g.:
+# . . 4|. . .|5 . .
+
+3 .|. .|. . 
+6 5|1 4|. . 
+1 4|2 3|. . 
+# -+- -+- - 
+5 6|4 2|. . 
+4 .|. .|. . 
+2 .|. .|. . 

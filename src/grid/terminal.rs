@@ -42,7 +42,7 @@ impl Grid {
                         }
                     }
                     // cancel
-                    KeyCode::Char('c') | KeyCode::Esc => {
+                    KeyCode::Esc => {
                         *self = backup_grid;
                         break;
                     }
@@ -67,7 +67,7 @@ impl Grid {
                     // Numbers
                     KeyCode::Char(c @ '0'..='9') => {
                         num_buffer.push(c);
-                        if num_buffer.len() == self.total_size().to_string().len() {
+                        if num_buffer.len() == self.max_str_size() {
                             // max digits reached, set this number
                             if self.set_number_maybe(position, num_buffer.parse::<ValType>().unwrap()) {
                                 // setting the number worked!
@@ -142,7 +142,7 @@ impl Grid {
 
         print!("{}\n\r", &msg);
 
-        cprint!("- Use arrow keys (or hjkl) to move around\n\r- Use numbers to enter a number\n\r - <u>the input buffer will print its contents automatically when max digits are entered</u> (its {} digits in this sudoku)\n\r - press Enter to set the number from the buffer\n\r - use backspace to delete last digit of buffer\n\r- \' \', \'.\', \'d\', \'x\' to delete a cell\n\r- enter (only with empty buffer) or \'q\' to save and exit\n\r- Use Esc or  \'c\' to cancel\n\r", self.total_size().to_string().len());
+        cprint!("- Use arrow keys (or hjkl) to move around\n\r- Use numbers to enter a number\n\r - <u>the input buffer will print its contents automatically when max digits are entered</u> (its {} digits in this sudoku)\n\r - press Enter to set the number from the buffer\n\r - use backspace to delete last digit of buffer\n\r- \' \', \'.\', \'d\', \'x\' to delete a cell\n\r- enter (only with empty buffer) or \'q\' to save and exit\n\r- Use Esc to cancel\n\r", self.max_str_size());
 
         let cursorpos = self.get_cursor_pos(pos, 1u16);
         execute!(
@@ -152,7 +152,7 @@ impl Grid {
     }
     // Its u16, because MoveTo() function takes u16
     fn get_cursor_pos(&self, pos_in_grid: (usize, usize), space_above: u16) -> (u16, u16) {
-        let cell_w = self.total_size().to_string().len();
+        let cell_w = self.max_str_size();
         // every cell has a width of cell_w.
         // every cell has a space of width 1 (*1 is reduced).
         // + cell_w to get to the end of the input field (cell_w-1 to not go to the whitespace after)
@@ -168,81 +168,7 @@ impl Grid {
         return (x.try_into().unwrap(), box_y * <usize as TryInto<u16>>::try_into(self.box_size.0).unwrap() + box_y + rem_y + space_above);
     }
     pub fn print_grid(&self) {
-        let max_str_size = self.total_size().to_string().len();
-
-        let print_horiz = |x: usize, y: usize, g: &Grid| {
-            // Make the string:
-            let s = match g.grid[x][y].value {
-                Some(val) => val.to_string(),
-                None => ".".repeat(max_str_size),
-            };
-            let spacing = " ".repeat(max_str_size - s.len());
-
-            let mut output = spacing + &s;
-
-            // format:
-            //
-            match g.grid[x][y].value {
-                Some(_) => {
-                    // when def_right -> cyan fg
-                    if g.grid[x][y].is_def_right {
-                        output = cformat!("<c>{}</c>", output);
-                    }
-
-                    // when wrong or responsible -> orange, yellow bg
-                    match g.grid[x][y].wrongn {
-                        Wrongness::Wrong => output = cformat!("<bg:#BF6900>{}</>", output),
-                        Wrongness::Responsible => output = cformat!("<bg:#A38802>{}</>", output),
-                        _ => {}
-                    }
-                }
-                None => output = cformat!("<#787878>{}</>", output),
-            };
-
-            // Print
-            cprint!("{}", output);
-
-            // Print spacing:
-            //
-            // | when box ends ' ' in any other case
-            if (y + 1) % g.box_count().0 == 0 && y + 1 != g.total_size() {
-                print!("|");
-            } else {
-                print!(" ");
-            }
-        };
-        // That was for each row
-        //
-        // Now the spacing for the boxes between certain rows
-        let print_horiz_spacing = |x: usize, g: &Grid| {
-            print!("\r\n");
-            // Check, if its a row which needs spacing:
-            if (x + 1) % g.box_size.0 == 0 && x + 1 != g.total_size() {
-                // Were counting in boxes here:
-                // To make the crosspoint between colums and rows
-                for box_of_pos in 0..g.box_count().1 {
-                    for pos_in_box in 0..g.box_size.1 {
-                        // print '-' where anumber would be
-                        for _ in 0..g.total_size().to_string().len() {
-                            print!("-");
-                        }
-
-                        // print '+' at crosspoints (end of box)
-                        if (pos_in_box + 1) % g.box_size.1 == 0
-                            && box_of_pos * g.box_size.1 + pos_in_box + 1 != g.total_size()
-                        {
-                            print!("+");
-                        } else {
-                            print!(" ");
-                        }
-                    }
-                }
-                print!("\r\n");
-            }
-        };
-
-        // execute the lambdas:
-        Grid::loop_all(self, &print_horiz, &print_horiz_spacing);
+        print!("{}", self.human_readable_grid(true, true));
     }
 
     pub fn print_all_solutions(&self) {

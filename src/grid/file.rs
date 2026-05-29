@@ -2,10 +2,10 @@
 use super::*;
 
 use std::fs::File;
-use std::io::{BufRead, BufReader};
 
 impl Grid {
     pub fn read_txt(file: &str) -> std::io::Result<Self> {
+        use std::io::{BufRead, BufReader};
         let file = File::open(file)?;
         let reader = BufReader::new(file);
 
@@ -43,7 +43,6 @@ impl Grid {
             }
 
             for cell in cells {
-                print!("pos: {:?}", next_pos);
                 // This every cell below here should be a number or '.'
                 if cell.contains(".") {
                     grid[next_pos.0][next_pos.1] = None;
@@ -71,5 +70,16 @@ impl Grid {
             sdk = Self::new_from_raw_grid_rectangle_box(&grid, box_size.0);
         }
         Ok(sdk)
+    }
+    pub fn save_txt(&self, path: &str) -> std::io::Result<()> {
+        use std::fs::File;
+        use std::io::Write;
+
+        let mut file = File::create(path)?;
+
+        write!(file, "# <- Comment\n# all numbers must be seperated by ' '\n# the end of one box must be '|'?n# all empty spaces must be '.', all cells containing a '.' will be skipped\n# if you have only one digit but your sudoku supports two, add another space in front\n#\n# E.g.:\n# . . 4|. . .|5 . .\n\n")?;
+
+        write!(file, "{}", self.human_readable_grid(false, false))?;
+        return Ok(());
     }
 }

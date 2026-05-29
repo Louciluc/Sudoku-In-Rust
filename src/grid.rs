@@ -306,18 +306,18 @@ impl Grid {
         g.len() == g[0].len()
     }
 
-    fn loop_all<FnAll, FnXes>(g: &Grid, fn_all: &FnAll, fn_xes: &FnXes)
-    where
-        FnAll: Fn(usize, usize, &Grid),
-        FnXes: Fn(usize, &Grid),
-    {
-        for x in 0..g.total_size() {
-            for y in 0..g.total_size() {
-                fn_all(x, y, g);
-            }
-            fn_xes(x, g);
-        }
-    }
+    //fn loop_all<FnAll, FnXes>(g: &Grid, fn_all: &FnAll, fn_xes: &FnXes)
+    //where
+    //    FnAll: Fn(usize, usize, &Grid),
+    //    FnXes: Fn(usize, &Grid),
+    //{
+    //    for x in 0..g.total_size() {
+    //        for y in 0..g.total_size() {
+    //            fn_all(x, y, g);
+    //        }
+    //        fn_xes(x, g);
+    //    }
+    //}
 
     fn loop_all_mut<FnAll, FnXes>(g: &mut Grid, fn_all: &FnAll, fn_xes: &FnXes)
     where
@@ -399,8 +399,102 @@ impl Grid {
         self.needs_new_find[pos_to_change.0] |= self.usize_to_mask(pos_to_change.1);
     }
 
+    pub fn human_readable_grid(&self, with_carriage_return: bool, with_colors: bool) -> String {
+        use color_print::cformat;
+        let max_str_size = self.max_str_size();
+        let mut res = String::new();
+
+        for x in 0..self.total_size() {
+
+            // For each row
+            for y in 0..self.total_size() {
+                // Make the string:
+                let s = match self.grid[x][y].value {
+                    Some(val) => val.to_string(),
+                    None => ".".repeat(max_str_size),
+                };
+                let spacing = " ".repeat(max_str_size - s.len());
+
+                let mut output = spacing + &s;
+
+                // format:
+                //
+                if with_colors {
+                    match self.grid[x][y].value {
+                        Some(_) => {
+                            // when def_right -> cyan fg
+                            if self.grid[x][y].is_def_right {
+                                output = cformat!("<c>{}</c>", output);
+                            }
+
+                            // when wrong or responsible -> orange, yellow bg
+                            match self.grid[x][y].wrongn {
+                                Wrongness::Wrong => output = cformat!("<bg:#BF6900>{}</>", output),
+                                Wrongness::Responsible => output = cformat!("<bg:#A38802>{}</>", output),
+                                _ => {}
+                            }
+                        }
+                        None => output = cformat!("<#787878>{}</>", output),
+                    };
+                }
+
+                // Print
+                res.push_str(&cformat!("{}", output));
+
+                // Print spacing:
+                //
+                // | when box ends ' ' in any other case
+                if (y + 1) % self.box_count().0 == 0 && y + 1 != self.total_size() {
+                    res.push('|');
+                } else {
+                    res.push(' ');
+                }
+            }
+
+            // Now the spacing
+            if with_carriage_return { res.push('\r'); }
+            res.push_str("\n");
+            // Check, if its a row which needs spacing:
+            if (x + 1) % self.box_size.0 == 0 && x + 1 != self.total_size() {
+                // make # for txt files
+                // add '-' for first cell. But -1 because '#' is already there
+                res.push('#');
+                res.push_str("-".repeat(max_str_size -1).as_str());
+                // Were counting in boxes here:
+                // To make the crosspoint between colums and rows
+                for box_of_pos in 0..self.box_count().1 {
+                    for pos_in_box in 0..self.box_size.1 {
+                        if box_of_pos == 0 && pos_in_box == 0 {
+                            res.push(' ');
+                            continue;
+                        }
+                        // print '-' where anumber would be
+                        for _ in 0..self.max_str_size() {
+                            res.push('-');
+                        }
+
+                        // print '+' at crosspoints (end of box)
+                        if (pos_in_box + 1) % self.box_size.1 == 0
+                            && box_of_pos * self.box_size.1 + pos_in_box + 1 != self.total_size()
+                        {
+                            res.push('+');
+                        } else {
+                            res.push(' ');
+                        }
+                    }
+                }
+                if with_carriage_return { res.push('\r'); }
+                res.push_str("\n");
+            }
+        }
+        return res;
+    }
+
     fn usize_to_mask(&self, u: usize) -> Mask {
         return 1u64 << self.total_size() -u -1;
+    }
+    pub fn max_str_size(&self) -> usize {
+        return self.total_size().to_string().len();
     }
     /*
         fn find_box_size(total_len: Mask) -> (Mask, Mask) {

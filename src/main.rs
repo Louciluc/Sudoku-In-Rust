@@ -15,8 +15,9 @@ pub type ValType = u8;
 
 //#[allow(unused)]
 pub fn main() -> std::io::Result<()> {
-    let mut read_sdk = Grid::read_txt("RectSdk.txt")?;
+    let mut read_sdk = Grid::read_txt("save.txt")?;
     read_sdk.edit_sudoku();
+    read_sdk.save_txt("save.txt")?;
     let mut grid4x4 = Grid::new_empty_rectangle_box(8, 8);
     grid4x4.edit_sudoku();
     let mut grid = VERY_HARD_SDK();
