@@ -1,7 +1,7 @@
 mod grid;
 use crate::grid::*;
 
-use std::time::Instant;
+use std::env;
 
 pub mod cell;
 use crate::cell::*;
@@ -13,25 +13,15 @@ pub type Mask = u64;
 // contain more than 8 bits:
 pub type ValType = u8;
 
+mod cli;
+
 //#[allow(unused)]
 pub fn main() -> std::io::Result<()> {
-    let mut read_sdk = Grid::read_txt("save.txt")?;
-    read_sdk.edit_sudoku();
-    read_sdk.save_txt("save.txt")?;
-    let mut grid4x4 = Grid::new_empty_rectangle_box(8, 8);
-    grid4x4.edit_sudoku();
-    let mut grid = VERY_HARD_SDK();
-    //let full_mask = grid.full_mask();
-    grid.edit_sudoku();
-    //println!("full_mask: {full_mask:b}");
-    //grid.print_needs_new_find();
-
-    grid.print_grid();
-    let timer = Instant::now();
-    grid.solve(true);
-    let solving_time = timer.elapsed().as_millis();
-    grid.print_all_solutions();
-    println!("Time to solve: {} milliseconds\n\rTotal time: {} milliseconds", solving_time, timer.elapsed().as_millis());
+    let mut args: Vec<String> = env::args().collect();
+    if args[0].contains("sudoku") {
+        args.remove(0);
+    }
+    cli::cli_main(&args);
     return Ok(());
 }
 //#[allow(nonstandard_style)]
